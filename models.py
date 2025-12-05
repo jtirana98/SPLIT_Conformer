@@ -70,7 +70,7 @@ def Conformer_tiny_patch16(pretrained=False, **kwargs):
     return model
 
 @register_model
-def Conformer_small_patch16(pretrained=False, **kwargs):
+def Conformer_small_patch16(pretrained=False, pretrained_cfg=None, **kwargs):
     model = Conformer(patch_size=16, channel_ratio=4, embed_dim=384, depth=12,
                       num_heads=6, mlp_ratio=4, qkv_bias=True, **kwargs)
     if pretrained:
