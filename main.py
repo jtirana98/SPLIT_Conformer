@@ -390,7 +390,7 @@ def load_model(args):
 
     model_state = model.state_dict()
     for k in list(model_state.keys()):
-        print(model_state[k])
+        print(k)
 
     # if args.eval:
     #     test_stats = evaluate(data_loader_val, model, device)
