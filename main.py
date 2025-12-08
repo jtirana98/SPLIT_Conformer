@@ -383,10 +383,14 @@ def load_model(args):
         mygraph=conformer.conformer_small_patch16_modules #args.my_graph
     )
 
-    checkpoint = torch.load(args.finetune, map_location='cpu')
+    # checkpoint = torch.load(args.finetune, map_location='cpu')
 
-    for k in list(checkpoint['model'].keys()):
-        print(checkpoint[k])
+    # for k in list(checkpoint['model'].keys()):
+        # print(checkpoint[k])
+
+    model_state = model.state_dict()
+    for k in list(model_state.keys()):
+        print(model_state[k])
 
     # if args.eval:
     #     test_stats = evaluate(data_loader_val, model, device)
