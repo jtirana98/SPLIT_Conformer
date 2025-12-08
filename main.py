@@ -156,6 +156,8 @@ def get_args_parser():
     parser.add_argument('--world_size', default=1, type=int,
                         help='number of distributed processes')
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
+    parser.add_argument('--my_graph', default='', type=str,
+                        help='graph for split computing')
     return parser
 
 
