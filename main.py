@@ -380,7 +380,7 @@ def load_model(args):
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=args.drop_block,
-        my_graph=conformer.conformer_small_patch16_modules #args.my_graph
+        mygraph=conformer.conformer_small_patch16_modules #args.my_graph
     )
 
     checkpoint = torch.load(args.finetune, map_location='cpu')
