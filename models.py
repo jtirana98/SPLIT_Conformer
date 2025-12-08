@@ -63,6 +63,7 @@ def deit_base_patch16_224(pretrained=False, **kwargs):
 
 @register_model
 def Conformer_tiny_patch16(pretrained=False, **kwargs):
+    
     model = Conformer(patch_size=16, channel_ratio=1, embed_dim=384, depth=12,
                       num_heads=6, mlp_ratio=4, qkv_bias=True, **kwargs)
     if pretrained:

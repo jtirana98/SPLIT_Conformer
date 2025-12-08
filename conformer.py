@@ -5,6 +5,46 @@ from functools import partial
 
 from timm.models.layers import DropPath, trunc_normal_
 
+conformer_small_patch16_modules = [
+    'nodeA',
+    'nodeB',
+    'nodeC',
+    'nodeD',
+    'nodeE',
+    'nodeF_step1_2',
+    'nodeF_trans_steps_2',
+    'nodeH_fusion_2',
+    'nodeF_step1_3',
+    'nodeF_trans_steps_3',
+    'nodeH_fusion_3',
+    'nodeF_step1_4',
+    'nodeF_trans_steps_4',
+    'nodeH_fusion_4',
+    'nodeF_step1_5',
+    'nodeF_trans_steps_5',
+    'nodeH_fusion_5',
+    'nodeF_step1_6',
+    'nodeF_trans_steps_6',
+    'nodeH_fusion_6',
+    'nodeF_step1_7',
+    'nodeF_trans_steps_7',
+    'nodeH_fusion_7',
+    'nodeF_step1_8',
+    'nodeF_trans_steps_8',
+    'nodeH_fusion_8',
+    'nodeF_step1_9',
+    'nodeF_trans_steps_9',
+    'nodeH_fusion_9',
+    'nodeF_step1_10',
+    'nodeF_trans_steps_10',
+    'nodeH_fusion_10',
+    'nodeF_step1_11',
+    'nodeF_trans_steps_11',
+    'nodeH_fusion_11',
+    'nodeI_trans_head',
+    'nodeI_conv_head'
+]
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -407,21 +447,24 @@ class Conformer(nn.Module):
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         assert depth % 3 == 0
         self.num_med_block = num_med_block
-        
-        if 'nodeA' in mygraph:
+        self.mygraph = mygraph
+        if 'nodeA' in self.mygraph:
             self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
         self.trans_dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
 
         # Classifier head
-        self.trans_norm = nn.LayerNorm(embed_dim)
-        self.trans_cls_head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
-        self.pooling = nn.AdaptiveAvgPool2d(1)
-        self.conv_cls_head = nn.Linear(int(256 * channel_ratio), num_classes)
+        if 'nodeI_trans_head' in self.mygraph:
+            self.trans_norm = nn.LayerNorm(embed_dim)
+            self.trans_cls_head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+        
+        if 'nodeI_conv_head' in self.mygraph:
+            self.pooling = nn.AdaptiveAvgPool2d(1)
+            self.conv_cls_head = nn.Linear(int(256 * channel_ratio), num_classes)
 
         # Stem stage: get the feature maps by conv block (copied form resnet.py)
         # start nodeA
-        if 'nodeB' in mygraph:
+        if 'nodeB' in self.mygraph:
             self.conv1 = nn.Conv2d(in_chans, 64, kernel_size=7, stride=2, padding=3, bias=False)  # 1 / 2 [112, 112]
             self.bn1 = nn.BatchNorm2d(64)
             self.act1 = nn.ReLU(inplace=True)
@@ -429,15 +472,15 @@ class Conformer(nn.Module):
         # end nodeA --> x_base
 
         # 1 stage
-        if 'nodeC' in mygraph:
+        if 'nodeC' in self.mygraph:
             stage_1_channel = int(base_channel * channel_ratio)
             self.conv_1 = ConvBlock(inplanes=64, outplanes=stage_1_channel, res_conv=True, stride=1)
         
-        if 'nodeD' in mygraph:
+        if 'nodeD' in self.mygraph:
             trans_dw_stride = patch_size // 4
             self.trans_patch_conv = nn.Conv2d(64, embed_dim, kernel_size=trans_dw_stride, stride=trans_dw_stride, padding=0)
         
-        if 'nodeE' in mygraph:
+        if 'nodeE' in self.mygraph:
             self.trans_1 = Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
                              qk_scale=qk_scale, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=self.trans_dpr[0],
                              )
@@ -446,10 +489,10 @@ class Conformer(nn.Module):
         init_stage = 2
         fin_stage = depth // 3 + 1
         for i in range(init_stage, fin_stage):
-            if f'nodeF_step1_{i}' in mygraph:
+            if f'nodeF_step1_{i}' in self.mygraph:
                 self.add_module('conv_trans_step1_' + str(i),
                     ConvBlock(inplanes=stage_1_channel, outplanes=stage_1_channel, res_conv=False, stride=1, groups=1))
-            if f'nodeF_trans_step1_{i}' in mygraph:
+            if f'nodeF_trans_steps_{i}' in self.mygraph:
                 self.add_module('conv_trans_steps_' + str(i),
                     TransBlock(stage_1_channel, dw_stride=trans_dw_stride, embed_dim=embed_dim, 
                             num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
@@ -460,12 +503,12 @@ class Conformer(nn.Module):
 
             if num_med_block > 0:
                 for j in range(num_med_block):
-                    if f'nodeG_medblock_{j}_{i}' in mygraph:
+                    if f'nodeG_medblock_{j}_{i}' in self.mygraph:
                         self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
                         Med_ConvBlock(inplanes=stage_1_channel, groups=1)
                         )
 
-            if f'nodeH_fusion_{i}' in mygraph:
+            if f'nodeH_fusion_{i}' in self.mygraph:
                 self.add_module('conv_trans_fusion_' + str(i),
                         ConvBlock(inplanes=stage_1_channel, outplanes=stage_1_channel, groups=1)
                 )
@@ -479,10 +522,10 @@ class Conformer(nn.Module):
             s = 2 if i == init_stage else 1
             in_channel = stage_1_channel if i == init_stage else stage_2_channel
             res_conv = True if i == init_stage else False
-            if f'nodeF_step1_{i}' in mygraph:
+            if f'nodeF_step1_{i}' in self.mygraph:
                 self.add_module('conv_trans_step1_' + str(i),
                     ConvBlock(inplanes=in_channel, outplanes=stage_2_channel, res_conv=res_conv, stride=s, groups=1))
-            if f'nodeF_trans_step1_{i}' in mygraph:
+            if f'nodeF_trans_steps_{i}' in self.mygraph:
                 self.add_module('conv_trans_steps_' + str(i),
                     TransBlock(stage_2_channel, dw_stride=trans_dw_stride // 2, embed_dim=embed_dim, 
                             num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
@@ -493,12 +536,12 @@ class Conformer(nn.Module):
 
             if num_med_block > 0:
                 for j in range(num_med_block):
-                    if f'nodeG_medblock_{j}_{i}' in mygraph:
+                    if f'nodeG_medblock_{j}_{i}' in self.mygraph:
                         self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
                         Med_ConvBlock(inplanes=stage_2_channel, groups=1)
                         )
 
-            if f'nodeH_fusion_{i}' in mygraph:
+            if f'nodeH_fusion_{i}' in self.mygraph:
                 self.add_module('conv_trans_fusion_' + str(i),
                         ConvBlock(inplanes=stage_2_channel, outplanes=stage_2_channel, groups=1)
                 )
@@ -512,10 +555,10 @@ class Conformer(nn.Module):
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
             res_conv = True if i == init_stage else False
             last_fusion = True if i == depth else False
-            if f'nodeF_step1_{i}' in mygraph:
+            if f'nodeF_step1_{i}' in self.mygraph:
                 self.add_module('conv_trans_step1_' + str(i),
                     ConvBlock(inplanes=in_channel, outplanes=stage_3_channel, res_conv=res_conv, stride=s, groups=1))
-            if f'nodeF_trans_step1_{i}' in mygraph:
+            if f'nodeF_trans_steps_{i}' in self.mygraph:
                 self.add_module('conv_trans_steps_' + str(i),
                     TransBlock(stage_3_channel, dw_stride=trans_dw_stride // 4, embed_dim=embed_dim, 
                             num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
@@ -526,12 +569,12 @@ class Conformer(nn.Module):
 
             if num_med_block > 0:
                 for j in range(num_med_block):
-                    if f'nodeG_medblock_{j}_{i}' in mygraph:
+                    if f'nodeG_medblock_{j}_{i}' in self.mygraph:
                         self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
                         Med_ConvBlock(inplanes=stage_3_channel, groups=1)
                         )
             
-            if f'nodeH_fusion_{i}' in mygraph:
+            if f'nodeH_fusion_{i}' in self.mygraph:
                 if last_fusion:
                     self.add_module('conv_trans_fusion_' + str(i),
                         ConvBlock(inplanes=in_channel, outplanes=stage_3_channel, res_conv=res_conv, stride=s, groups=1)
@@ -571,38 +614,48 @@ class Conformer(nn.Module):
 
     def forward(self, x):
         B = x.shape[0]
-        cls_tokens = self.cls_token.expand(B, -1, -1) #nodeA
+        if 'nodeA' in self.mygraph:
+            cls_tokens = self.cls_token.expand(B, -1, -1) #nodeA
 
         # pdb.set_trace()
         # stem stage [N, 3, 224, 224] -> [N, 64, 56, 56]
-        x_base = self.maxpool(self.act1(self.bn1(self.conv1(x)))) #nodeB
+        if 'nodeB' in self.mygraph:
+            x_base = self.maxpool(self.act1(self.bn1(self.conv1(x)))) #nodeB
 
         # 1 stage
-        x = self.conv_1(x_base, return_x_2=False) #nodeC
-
-        x_t = self.trans_patch_conv(x_base).flatten(2).transpose(1, 2) #nodeD
-        x_t = torch.cat([cls_tokens, x_t], dim=1) #nodeD
-        x_t = self.trans_1(x_t) #nodeF
+        if 'nodeC' in self.mygraph:
+            x = self.conv_1(x_base, return_x_2=False) #nodeC
+        if 'nodeD' in self.mygraph:
+            x_t = self.trans_patch_conv(x_base).flatten(2).transpose(1, 2) #nodeD
+        if 'nodeE' in self.mygraph:
+            x_t = torch.cat([cls_tokens, x_t], dim=1) #nodeD
+            x_t = self.trans_1(x_t) #nodeF
         
         # 2 ~ final 
         for i in range(2, self.fin_stage):
             # x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
-            x, x2 = eval('self.conv_trans_step1_' + str(i))(x)
-            x_t, x_t_r = eval('self.conv_trans_step1_' + str(i))(x2, x_t)
+            if f'nodeF_step1_{i}' in self.mygraph:
+                x, x2 = eval('self.conv_trans_step1_' + str(i))(x)
+            if f'nodeF_trans_steps_{i}' in self.mygraph:
+                x_t, x_t_r = eval('self.conv_trans_steps_' + str(i))(x2, x_t)
 
             if self.num_med_block  > 0:
                 for j in range(self.num_med_block):
-                    x = eval('self.conv_trans_medblock_' + str(j) + '_' + str(i))(x)
+                    if f'nodeG_medblock_{j}_{i}' in self.mygraph:
+                        x = eval('self.conv_trans_medblock_' + str(j) + '_' + str(i))(x)
             
-            x = eval('self.conv_trans_fusion_' + str(i))(x, x_t_r, return_x_2=False)
+            if f'nodeH_fusion_{i}' in self.mygraph:
+                x = eval('self.conv_trans_fusion_' + str(i))(x, x_t_r, return_x_2=False)
 
 
         # conv classification
-        x_p = self.pooling(x).flatten(1)
-        conv_cls = self.conv_cls_head(x_p)
+        if 'nodeI_conv_head' in self.mygraph:
+            x_p = self.pooling(x).flatten(1)
+            conv_cls = self.conv_cls_head(x_p)
 
         # trans classification
-        x_t = self.trans_norm(x_t)
-        tran_cls = self.trans_cls_head(x_t[:, 0])
+        if 'nodeI_trans_head' in self.mygraph:
+            x_t = self.trans_norm(x_t)
+            tran_cls = self.trans_cls_head(x_t[:, 0])
 
         return [conv_cls, tran_cls]

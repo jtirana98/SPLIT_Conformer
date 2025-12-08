@@ -373,3 +373,30 @@ if __name__ == '__main__':
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     main(args)
+
+
+def load_model(args):
+    args = parser.parse_args()
+    device = torch.device(args.device)
+
+    model = create_model(
+        args.model,
+        pretrained=False,
+        num_classes=args.nb_classes,
+        drop_rate=args.drop,
+        drop_path_rate=args.drop_path,
+        drop_block_rate=args.drop_block,
+        my_graph=args.my_graph
+    )
+
+    checkpoint = torch.load(args.finetune, map_location='cpu')
+
+    for k in list(checkpoint['model'].keys()):
+        print(checkpoint[k])
+
+    # if args.eval:
+    #     test_stats = evaluate(data_loader_val, model, device)
+    #     print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+    #     return
+
+    model.to(device)
