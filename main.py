@@ -21,6 +21,7 @@ from samplers import RASampler
 import utils
 import models
 
+import conformer
 # from fvcore.nn import FlopCountAnalysis
 
 def get_args_parser():
@@ -371,7 +372,7 @@ def main(args):
 def load_model(args):
     args = parser.parse_args()
     device = torch.device(args.device)
-
+    args.nb_classes = 1000
     model = create_model(
         args.model,
         pretrained=False,
@@ -379,7 +380,7 @@ def load_model(args):
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=args.drop_block,
-        my_graph=args.my_graph
+        my_graph=conformer.conformer_small_patch16_modules #args.my_graph
     )
 
     checkpoint = torch.load(args.finetune, map_location='cpu')
