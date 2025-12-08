@@ -397,7 +397,7 @@ class TransBlock(nn.Module):
 
 class Conformer(nn.Module):
 
-    def __init__(self, patch_size=16, in_chans=3, num_classes=1000, base_channel=64, channel_ratio=4, num_med_block=0,
+    def __init__(self, mygraph=[], patch_size=16, in_chans=3, num_classes=1000, base_channel=64, channel_ratio=4, num_med_block=0,
                  embed_dim=768, depth=12, num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.):
 
@@ -407,7 +407,10 @@ class Conformer(nn.Module):
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         assert depth % 3 == 0
         self.num_med_block = num_med_block
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        
+        if 'nodeA' in mygraph:
+            self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+
         self.trans_dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
 
         # Classifier head
@@ -418,18 +421,24 @@ class Conformer(nn.Module):
 
         # Stem stage: get the feature maps by conv block (copied form resnet.py)
         # start nodeA
-        self.conv1 = nn.Conv2d(in_chans, 64, kernel_size=7, stride=2, padding=3, bias=False)  # 1 / 2 [112, 112]
-        self.bn1 = nn.BatchNorm2d(64)
-        self.act1 = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # 1 / 4 [56, 56]
+        if 'nodeB' in mygraph:
+            self.conv1 = nn.Conv2d(in_chans, 64, kernel_size=7, stride=2, padding=3, bias=False)  # 1 / 2 [112, 112]
+            self.bn1 = nn.BatchNorm2d(64)
+            self.act1 = nn.ReLU(inplace=True)
+            self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)  # 1 / 4 [56, 56]
         # end nodeA --> x_base
 
         # 1 stage
-        stage_1_channel = int(base_channel * channel_ratio)
-        trans_dw_stride = patch_size // 4
-        self.conv_1 = ConvBlock(inplanes=64, outplanes=stage_1_channel, res_conv=True, stride=1)
-        self.trans_patch_conv = nn.Conv2d(64, embed_dim, kernel_size=trans_dw_stride, stride=trans_dw_stride, padding=0)
-        self.trans_1 = Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
+        if 'nodeC' in mygraph:
+            stage_1_channel = int(base_channel * channel_ratio)
+            self.conv_1 = ConvBlock(inplanes=64, outplanes=stage_1_channel, res_conv=True, stride=1)
+        
+        if 'nodeD' in mygraph:
+            trans_dw_stride = patch_size // 4
+            self.trans_patch_conv = nn.Conv2d(64, embed_dim, kernel_size=trans_dw_stride, stride=trans_dw_stride, padding=0)
+        
+        if 'nodeE' in mygraph:
+            self.trans_1 = Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
                              qk_scale=qk_scale, drop=drop_rate, attn_drop=attn_drop_rate, drop_path=self.trans_dpr[0],
                              )
 
@@ -437,26 +446,29 @@ class Conformer(nn.Module):
         init_stage = 2
         fin_stage = depth // 3 + 1
         for i in range(init_stage, fin_stage):
-            self.add_module('conv_trans_step1_' + str(i),
-                ConvBlock(inplanes=stage_1_channel, outplanes=stage_1_channel, res_conv=False, stride=1, groups=1))
-            self.add_module('conv_trans_steps_' + str(i),
-                TransBlock(stage_1_channel, dw_stride=trans_dw_stride, embed_dim=embed_dim, 
-                           num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
-                           qk_scale=qk_scale, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, 
-                           drop_path_rate=self.trans_dpr[i-1]
-                           )
+            if f'nodeF_step1_{i}' in mygraph:
+                self.add_module('conv_trans_step1_' + str(i),
+                    ConvBlock(inplanes=stage_1_channel, outplanes=stage_1_channel, res_conv=False, stride=1, groups=1))
+            if f'nodeF_trans_step1_{i}' in mygraph:
+                self.add_module('conv_trans_steps_' + str(i),
+                    TransBlock(stage_1_channel, dw_stride=trans_dw_stride, embed_dim=embed_dim, 
+                            num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
+                            qk_scale=qk_scale, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, 
+                            drop_path_rate=self.trans_dpr[i-1]
+                            )
             )
 
             if num_med_block > 0:
                 for j in range(num_med_block):
-                    self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
-                    Med_ConvBlock(inplanes=stage_1_channel, groups=1)
-                    )
+                    if f'nodeG_medblock_{j}_{i}' in mygraph:
+                        self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
+                        Med_ConvBlock(inplanes=stage_1_channel, groups=1)
+                        )
 
-
-            self.add_module('conv_trans_fusion_' + str(i),
-                    ConvBlock(inplanes=stage_1_channel, outplanes=stage_1_channel, groups=1)
-            )
+            if f'nodeH_fusion_{i}' in mygraph:
+                self.add_module('conv_trans_fusion_' + str(i),
+                        ConvBlock(inplanes=stage_1_channel, outplanes=stage_1_channel, groups=1)
+                )
 
 
         stage_2_channel = int(base_channel * channel_ratio * 2)
@@ -467,27 +479,29 @@ class Conformer(nn.Module):
             s = 2 if i == init_stage else 1
             in_channel = stage_1_channel if i == init_stage else stage_2_channel
             res_conv = True if i == init_stage else False
-            self.add_module('conv_trans_step1_' + str(i),
-                ConvBlock(inplanes=in_channel, outplanes=stage_2_channel, res_conv=res_conv, stride=s, groups=1))
-            
-            self.add_module('conv_trans_steps_' + str(i),
-                TransBlock(stage_2_channel, dw_stride=trans_dw_stride // 2, embed_dim=embed_dim, 
-                           num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
-                           qk_scale=qk_scale, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, 
-                           drop_path_rate=self.trans_dpr[i-1]
-                           )
+            if f'nodeF_step1_{i}' in mygraph:
+                self.add_module('conv_trans_step1_' + str(i),
+                    ConvBlock(inplanes=in_channel, outplanes=stage_2_channel, res_conv=res_conv, stride=s, groups=1))
+            if f'nodeF_trans_step1_{i}' in mygraph:
+                self.add_module('conv_trans_steps_' + str(i),
+                    TransBlock(stage_2_channel, dw_stride=trans_dw_stride // 2, embed_dim=embed_dim, 
+                            num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
+                            qk_scale=qk_scale, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, 
+                            drop_path_rate=self.trans_dpr[i-1]
+                            )
             )
 
             if num_med_block > 0:
                 for j in range(num_med_block):
-                    self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
-                    Med_ConvBlock(inplanes=stage_2_channel, groups=1)
-                    )
+                    if f'nodeG_medblock_{j}_{i}' in mygraph:
+                        self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
+                        Med_ConvBlock(inplanes=stage_2_channel, groups=1)
+                        )
 
-
-            self.add_module('conv_trans_fusion_' + str(i),
-                    ConvBlock(inplanes=stage_2_channel, outplanes=stage_2_channel, groups=1)
-            )
+            if f'nodeH_fusion_{i}' in mygraph:
+                self.add_module('conv_trans_fusion_' + str(i),
+                        ConvBlock(inplanes=stage_2_channel, outplanes=stage_2_channel, groups=1)
+                )
 
         stage_3_channel = int(base_channel * channel_ratio * 2 * 2)
         # 9~12 stage
@@ -498,32 +512,34 @@ class Conformer(nn.Module):
             in_channel = stage_2_channel if i == init_stage else stage_3_channel
             res_conv = True if i == init_stage else False
             last_fusion = True if i == depth else False
-            self.add_module('conv_trans_step1_' + str(i),
-                ConvBlock(inplanes=in_channel, outplanes=stage_3_channel, res_conv=res_conv, stride=s, groups=1))
-            
-            self.add_module('conv_trans_steps_' + str(i),
-                TransBlock(stage_3_channel, dw_stride=trans_dw_stride // 4, embed_dim=embed_dim, 
-                           num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
-                           qk_scale=qk_scale, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, 
-                           drop_path_rate=self.trans_dpr[i-1]
-                           )
+            if f'nodeF_step1_{i}' in mygraph:
+                self.add_module('conv_trans_step1_' + str(i),
+                    ConvBlock(inplanes=in_channel, outplanes=stage_3_channel, res_conv=res_conv, stride=s, groups=1))
+            if f'nodeF_trans_step1_{i}' in mygraph:
+                self.add_module('conv_trans_steps_' + str(i),
+                    TransBlock(stage_3_channel, dw_stride=trans_dw_stride // 4, embed_dim=embed_dim, 
+                            num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, 
+                            qk_scale=qk_scale, drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, 
+                            drop_path_rate=self.trans_dpr[i-1]
+                            )
             )
 
             if num_med_block > 0:
                 for j in range(num_med_block):
-                    self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
-                    Med_ConvBlock(inplanes=stage_3_channel, groups=1)
-                    )
+                    if f'nodeG_medblock_{j}_{i}' in mygraph:
+                        self.add_module('conv_trans_medblock_' + str(j) + '_' + str(i),
+                        Med_ConvBlock(inplanes=stage_3_channel, groups=1)
+                        )
             
-
-            if last_fusion:
-                self.add_module('conv_trans_fusion_' + str(i),
-                    ConvBlock(inplanes=in_channel, outplanes=stage_3_channel, res_conv=res_conv, stride=s, groups=1)
-                )
-            else:
-                self.add_module('conv_trans_fusion_' + str(i),
-                    ConvBlock(inplanes=stage_3_channel, outplanes=stage_3_channel, groups=1)
-                )
+            if f'nodeH_fusion_{i}' in mygraph:
+                if last_fusion:
+                    self.add_module('conv_trans_fusion_' + str(i),
+                        ConvBlock(inplanes=in_channel, outplanes=stage_3_channel, res_conv=res_conv, stride=s, groups=1)
+                    )
+                else:
+                    self.add_module('conv_trans_fusion_' + str(i),
+                        ConvBlock(inplanes=stage_3_channel, outplanes=stage_3_channel, groups=1)
+                    )
             
         self.fin_stage = fin_stage
 
@@ -565,7 +581,7 @@ class Conformer(nn.Module):
         x = self.conv_1(x_base, return_x_2=False) #nodeC
 
         x_t = self.trans_patch_conv(x_base).flatten(2).transpose(1, 2) #nodeD
-        x_t = torch.cat([cls_tokens, x_t], dim=1) #nodeE
+        x_t = torch.cat([cls_tokens, x_t], dim=1) #nodeD
         x_t = self.trans_1(x_t) #nodeF
         
         # 2 ~ final 
