@@ -224,6 +224,7 @@ def main(args):
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=args.drop_block,
+        mygraph=conformer.conformer_small_patch16_modules
     )
 
     if args.finetune:
@@ -404,7 +405,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    # main(args)
-    load_model(args)
+    main(args)
+    # load_model(args)
 
 
