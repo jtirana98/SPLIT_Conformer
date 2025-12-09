@@ -502,7 +502,7 @@ class Conformer(nn.Module):
         if 'nodeA' in self.mygraph:
             self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
             trunc_normal_(self.cls_token, std=.02)
-            
+
         self.trans_dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
 
         # Classifier head
@@ -528,8 +528,8 @@ class Conformer(nn.Module):
         if 'nodeC' in self.mygraph:
             self.conv_1 = ConvBlock(inplanes=64, outplanes=stage_1_channel, res_conv=True, stride=1)
         
+        trans_dw_stride = patch_size // 4
         if 'nodeD' in self.mygraph:
-            trans_dw_stride = patch_size // 4
             self.trans_patch_conv = nn.Conv2d(64, embed_dim, kernel_size=trans_dw_stride, stride=trans_dw_stride, padding=0)
         
         if 'nodeE' in self.mygraph:
