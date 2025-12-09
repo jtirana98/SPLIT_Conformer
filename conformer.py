@@ -45,6 +45,57 @@ conformer_small_patch16_modules = [
     'nodeI_conv_head'
 ]
 
+conformer_small_patch16_dependencies = {
+    'nodeA': {'prev':[], 'next': ['nodeE']},
+    'nodeB': {'prev':[], 'next': ['nodeC', 'nodeD']},
+    'nodeC': {'prev':['nodeB'], 'next': ['nodeF_step1_2']},
+    'nodeD': {'prev':['nodeB'], 'next': ['nodeE']},
+    'nodeE': {'prev':['nodeA, nodeD'], 'next': ['']},
+    
+    'nodeF_step1_2': {'prev':['nodeC'], 'next': ['nodeF_trans_steps_2']},
+    'nodeF_trans_steps_2': {'prev':['nodeE', 'nodeF_step1_2'], 'next': ['nodeF_trans_steps_3']},
+    'nodeH_fusion_2': {'prev':['nodeF_step1_2', 'nodeF_trans_steps_2'], 'next': ['nodeF_step1_3']},
+    
+    'nodeF_step1_3': {'prev':['nodeH_fusion_2'], 'next': ['nodeF_trans_steps_3']},
+    'nodeF_trans_steps_3': {'prev':['nodeF_trans_steps_2', 'nodeF_step1_2'], 'next': ['nodeF_trans_steps_4']},
+    'nodeH_fusion_3': {'prev':['nodeF_step1_3', 'nodeF_trans_steps_3'], 'next': ['nodeF_step1_4']},
+    
+    'nodeF_step1_4': {'prev':['nodeH_fusion_3'], 'next': ['nodeF_trans_steps_4']},
+    'nodeF_trans_steps_4': {'prev':['nodeF_trans_steps_3', 'nodeF_step1_3'], 'next': ['nodeF_trans_steps_5']},
+    'nodeH_fusion_4': {'prev':['nodeF_step1_4', 'nodeF_trans_steps_4'], 'next': ['nodeF_step1_5']},
+    
+    'nodeF_step1_5': {'prev':['nodeH_fusion_4'], 'next': ['nodeF_trans_steps_5']},
+    'nodeF_trans_steps_5': {'prev':['nodeF_trans_steps_4', 'nodeF_step1_4'], 'next': ['nodeF_trans_steps_6']},
+    'nodeH_fusion_5': {'prev':['nodeF_step1_5', 'nodeF_trans_steps_5'], 'next': ['nodeF_step1_6']},
+    
+    'nodeF_step1_6': {'prev':['nodeH_fusion_5'], 'next': ['nodeF_trans_steps_6']},
+    'nodeF_trans_steps_6': {'prev':['nodeF_trans_steps_5', 'nodeF_step1_5'], 'next': ['nodeF_trans_steps_7']},
+    'nodeH_fusion_6': {'prev':['nodeF_step1_6', 'nodeF_trans_steps_6'], 'next': ['nodeF_step1_7']},
+    
+    'nodeF_step1_7': {'prev':['nodeH_fusion_6'], 'next': ['nodeF_trans_steps_7']},
+    'nodeF_trans_steps_7': {'prev':['nodeF_trans_steps_6', 'nodeF_step1_7'], 'next': ['nodeF_trans_steps_8']},
+    'nodeH_fusion_7': {'prev':['nodeF_step1_7', 'nodeF_trans_steps_7'], 'next': ['nodeF_step1_8']},
+    
+    'nodeF_step1_8': {'prev':['nodeH_fusion_7'], 'next': ['nodeF_trans_steps_8']},
+    'nodeF_trans_steps_8': {'prev':['nodeF_trans_steps_7', 'nodeF_step1_8'], 'next': ['nodeF_trans_steps_9']},
+    'nodeH_fusion_8': {'prev':['nodeF_step1_8', 'nodeF_trans_steps_8'], 'next': ['nodeF_step1_9']},
+    
+    'nodeF_step1_9': {'prev':['nodeH_fusion_8'], 'next': ['nodeF_trans_steps_9']},
+    'nodeF_trans_steps_9': {'prev':['nodeF_trans_steps_8', 'nodeF_step1_9'], 'next': ['nodeF_trans_steps_10']},
+    'nodeH_fusion_9': {'prev':['nodeF_step1_9', 'nodeF_trans_steps_9'], 'next': ['nodeF_step1_10']},
+    
+    'nodeF_step1_10': {'prev':['nodeH_fusion_9'], 'next': ['nodeF_trans_steps_10']},
+    'nodeF_trans_steps_10': {'prev':['nodeF_trans_steps_9', 'nodeF_step1_10'], 'next': ['nodeF_trans_steps_11']},
+    'nodeH_fusion_10': {'prev':['nodeF_step1_10', 'nodeF_trans_steps_10'], 'next': ['nodeF_step1_11']},
+    
+    'nodeF_step1_11': {'prev':['nodeH_fusion_10'], 'next': ['nodeF_trans_steps_11']},
+    'nodeF_trans_steps_11': {'prev':['nodeF_trans_steps_10', 'nodeF_step1_11'], 'next': ['nodeI_trans_head']},
+    'nodeH_fusion_11': {'prev':['nodeF_step1_11', 'nodeF_trans_steps_11'], 'next': ['nodeI_conv_head']},
+    
+    'nodeI_trans_head': {'prev':['nodeF_trans_steps_11'], 'next': ['']},
+    'nodeI_conv_head': {'prev':['nodeI_conv_head'], 'next': ['']},
+    }
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -628,8 +679,8 @@ class Conformer(nn.Module):
         if 'nodeD' in self.mygraph:
             x_t = self.trans_patch_conv(x_base).flatten(2).transpose(1, 2) #nodeD
         if 'nodeE' in self.mygraph:
-            x_t = torch.cat([cls_tokens, x_t], dim=1) #nodeD
-            x_t = self.trans_1(x_t) #nodeF
+            x_t = torch.cat([cls_tokens, x_t], dim=1)
+            x_t = self.trans_1(x_t) 
         
         # 2 ~ final 
         for i in range(2, self.fin_stage):
