@@ -670,7 +670,7 @@ class Conformer(nn.Module):
         if 'nodeA' in self.mygraph:
             B = input_list['x'].shape[0]
             cls_tokens = self.cls_token.expand(B, -1, -1) #nodeA
-            return_list['cls_token'] = cls_tokens
+            return_list['cls_tokens'] = cls_tokens
         # pdb.set_trace()
         # stem stage [N, 3, 224, 224] -> [N, 64, 56, 56]
         if 'nodeB' in self.mygraph:
