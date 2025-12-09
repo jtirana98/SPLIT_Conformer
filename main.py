@@ -395,7 +395,8 @@ def load_model(args):
     
 
     model.load_state_dict(
-        torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth'))
+        torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', 
+                   weights_only=False))
     
     dataset_val, _ = build_dataset(is_train=False, args=args)
     data_loader_val = torch.utils.data.DataLoader(
