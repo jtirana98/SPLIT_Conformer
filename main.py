@@ -381,7 +381,7 @@ def load_model(args):
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=args.drop_block,
-        mygraph=conformer.conformer_small_patch16_modules #args.my_graph
+        mygraph= {'nodeA', 'nodeB'} #conformer.conformer_small_patch16_modules #args.my_graph
     )
 
     # checkpoint = torch.load(args.finetune, map_location='cpu')
@@ -403,7 +403,7 @@ def load_model(args):
         shuffle=False, num_workers=args.num_workers,
         pin_memory=args.pin_mem, drop_last=False
     )
-    
+
     model.to(device)
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
