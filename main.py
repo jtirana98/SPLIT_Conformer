@@ -390,14 +390,12 @@ def load_model(args):
         # print(checkpoint[k])
 
     model_state = model.state_dict()
+    
+    
+    model_tocopy = torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', weights_only=False)
     for k in list(model_state.keys()):
-        print(k)
-    
+        model.load_state_dict(model_tocopy[k], strict=False)
 
-    model.load_state_dict(
-        torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', 
-                   weights_only=False))
-    
     dataset_val, _ = build_dataset(is_train=False, args=args)
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, batch_size=int(3.0 * args.batch_size),
