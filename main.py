@@ -470,7 +470,7 @@ def load_model(args):
                 if next_node == []:
                     final_out.append(out_)
 
-            output = [out_['conv_cls'], out_['tran_cls']]
+            output = [final_out['conv_cls'], final_out['tran_cls']]
             # print(FlopCountAnalysis(model, images).total())
             # Conformer
             if isinstance(output, list):
