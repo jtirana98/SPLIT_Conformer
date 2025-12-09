@@ -52,19 +52,19 @@ conformer_small_patch16_dependencies = {
     'nodeD': {'prev':['nodeB'], 'next': ['nodeE']},
     'nodeE': {'prev':['nodeA', 'nodeD'], 'next': ['nodeF_trans_steps_2']},
     
-    'nodeF_step1_2': {'prev':['nodeC'], 'next': ['nodeF_trans_steps_2, nodeH_fusion_2']},
+    'nodeF_step1_2': {'prev':['nodeC'], 'next': ['nodeF_trans_steps_2', 'nodeH_fusion_2']},
     'nodeF_trans_steps_2': {'prev':['nodeE', 'nodeF_step1_2'], 'next': ['nodeF_trans_steps_3', 'nodeH_fusion_2']},
     'nodeH_fusion_2': {'prev':['nodeF_step1_2', 'nodeF_trans_steps_2'], 'next': ['nodeF_step1_3', 'nodeF_trans_steps_3']},
     
-    'nodeF_step1_3': {'prev':['nodeH_fusion_2'], 'next': ['nodeF_trans_steps_3, nodeH_fusion_3']},
+    'nodeF_step1_3': {'prev':['nodeH_fusion_2'], 'next': ['nodeF_trans_steps_3', 'nodeH_fusion_3']},
     'nodeF_trans_steps_3': {'prev':['nodeF_trans_steps_2', 'nodeF_step1_3'], 'next': ['nodeF_trans_steps_4', 'nodeH_fusion_3']},
     'nodeH_fusion_3': {'prev':['nodeF_step1_3', 'nodeF_trans_steps_3'], 'next': ['nodeF_step1_4']},
     
-    'nodeF_step1_4': {'prev':['nodeH_fusion_3'], 'next': ['nodeF_trans_steps_4, nodeH_fusion_4']},
+    'nodeF_step1_4': {'prev':['nodeH_fusion_3'], 'next': ['nodeF_trans_steps_4', 'nodeH_fusion_4']},
     'nodeF_trans_steps_4': {'prev':['nodeF_trans_steps_3', 'nodeF_step1_4'], 'next': ['nodeF_trans_steps_5', 'nodeH_fusion_4']},
     'nodeH_fusion_4': {'prev':['nodeF_step1_4', 'nodeF_trans_steps_4'], 'next': ['nodeF_step1_5']},
     
-    'nodeF_step1_5': {'prev':['nodeH_fusion_4'], 'next': ['nodeF_trans_steps_5, nodeH_fusion_5']},
+    'nodeF_step1_5': {'prev':['nodeH_fusion_4'], 'next': ['nodeF_trans_steps_5', 'nodeH_fusion_5']},
     'nodeF_trans_steps_5': {'prev':['nodeF_trans_steps_4', 'nodeF_step1_5'], 'next': ['nodeF_trans_steps_6', 'nodeH_fusion_5']},
     'nodeH_fusion_5': {'prev':['nodeF_step1_5', 'nodeF_trans_steps_5'], 'next': ['nodeF_step1_6']},
     
@@ -691,6 +691,7 @@ class Conformer(nn.Module):
         for i in range(2, self.fin_stage):
             # x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             if f'nodeF_step1_{i}' in self.mygraph:
+                print('OKKKKK')
                 x, x2 = eval('self.conv_trans_step1_' + str(i))(input_list['x'])
                 return_list['x'] = x
                 return_list['x2'] = x2
