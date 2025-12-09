@@ -441,6 +441,7 @@ def load_model(args):
         with torch.cuda.amp.autocast():
             while len(next_node) > 0: 
                 current_node = None
+                print(f'Searching among {next_node} with old nodes {old_node}')
                 for i in range(len(next_node)): 
                     dependencies = conformer.conformer_small_patch16_dependencies[next_node[i]]['prev']
                     if all(item in old_node for item in dependencies):
