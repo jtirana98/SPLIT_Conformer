@@ -93,7 +93,7 @@ conformer_small_patch16_dependencies = {
     'nodeH_fusion_11': {'prev':['nodeF_step1_11', 'nodeF_trans_steps_11'], 'next': ['nodeI_conv_head']},
     
     'nodeI_trans_head': {'prev':['nodeF_trans_steps_11'], 'next': []},
-    'nodeI_conv_head': {'prev':['nodeI_conv_head'], 'next': []},
+    'nodeI_conv_head': {'prev':['nodeH_fusion_11'], 'next': []},
     }
 
 input_val = {'nodeH_fusion_': ['x', 'x_t_r'],}
