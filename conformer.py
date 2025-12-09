@@ -501,7 +501,8 @@ class Conformer(nn.Module):
         self.mygraph = mygraph
         if 'nodeA' in self.mygraph:
             self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-
+            trunc_normal_(self.cls_token, std=.02)
+            
         self.trans_dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
 
         # Classifier head
@@ -637,7 +638,7 @@ class Conformer(nn.Module):
             
         self.fin_stage = fin_stage
 
-        trunc_normal_(self.cls_token, std=.02)
+        
 
         self.apply(self._init_weights)
 
