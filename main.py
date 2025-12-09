@@ -398,7 +398,7 @@ def load_model(args):
     model_tocopy = torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', weights_only=False)
     models = {}
 
-    for key in list(conformer.conformer_small_patch16_modules.keys()):
+    for key in list(conformer.conformer_small_patch16_modules):
         models.update({key: create_model(
             args.model,
             pretrained=False,
@@ -406,7 +406,7 @@ def load_model(args):
             drop_rate=args.drop,
             drop_path_rate=args.drop_path,
             drop_block_rate=args.drop_block,
-            mygraph={key: conformer.conformer_small_patch16_modules[key]}
+            mygraph= [key]
         )})
 
 
