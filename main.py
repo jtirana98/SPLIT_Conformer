@@ -392,11 +392,23 @@ def load_model(args):
     model_state = model.state_dict()
     for k in list(model_state.keys()):
         print(k)
+    
 
-    # if args.eval:
-    #     test_stats = evaluate(data_loader_val, model, device)
-    #     print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
-    #     return
+    model.load_state_dict(
+        torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', 
+        weights_only=True))
+    
+    dataset_val, _ = build_dataset(is_train=False, args=args)
+    data_loader_val = torch.utils.data.DataLoader(
+        dataset_val, batch_size=int(3.0 * args.batch_size),
+        shuffle=False, num_workers=args.num_workers,
+        pin_memory=args.pin_mem, drop_last=False
+    )
+
+    if args.eval:
+        test_stats = evaluate(data_loader_val, model, device)
+        print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+        return
 
     model.to(device)
 
@@ -405,7 +417,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    main(args)
-    # load_model(args)
+    # main(args)
+    load_model(args)
 
 
