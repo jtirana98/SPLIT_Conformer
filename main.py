@@ -14,6 +14,7 @@ from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.scheduler import create_scheduler
 from timm.optim import create_optimizer
 from timm.utils import NativeScaler, get_state_dict, ModelEma
+from timm.utils import accuracy
 
 from datasets import build_dataset
 from engine import train_one_epoch, evaluate
@@ -374,6 +375,8 @@ def load_model(args):
     args = parser.parse_args()
     device = torch.device(args.device)
     dataset_val, args.nb_classes = build_dataset(is_train=False, args=args)
+    
+    '''
     model = create_model(
         args.model,
         pretrained=False,
@@ -381,37 +384,124 @@ def load_model(args):
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=args.drop_block,
-        mygraph= {'nodeA', 'nodeB'} #conformer.conformer_small_patch16_modules #args.my_graph
+        mygraph= conformer.conformer_small_patch16_modules #args.my_graph
     )
+    '''
 
-    # checkpoint = torch.load(args.finetune, map_location='cpu')
-
-    # for k in list(checkpoint['model'].keys()):
-        # print(checkpoint[k])
-
-    model_state = model.state_dict()
-    
-    
-    model_tocopy = torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', weights_only=False)
-    print(model_tocopy['model'].keys())
-    #for k in list(model_state.keys()):
-    model.load_state_dict(model_tocopy['model'], strict=False)
-
-    
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, batch_size=int(3.0 * args.batch_size),
         shuffle=False, num_workers=args.num_workers,
         pin_memory=args.pin_mem, drop_last=False
     )
 
-    model.to(device)
+
+    model_tocopy = torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', weights_only=False)
+    models = {}
+
+    for key in list(conformer.conformer_small_patch16_modules.keys()):
+        models.update({key: create_model(
+            args.model,
+            pretrained=False,
+            num_classes=args.nb_classes,
+            drop_rate=args.drop,
+            drop_path_rate=args.drop_path,
+            drop_block_rate=args.drop_block,
+            mygraph={key: conformer.conformer_small_patch16_modules[key]}
+        )})
+
+
+    for model in list(models.values()):
+        model_state = model.state_dict()
+        model.load_state_dict(model_tocopy['model'], strict=False)
+        model.to(device)
+        model.eval()
+    
+        '''
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         return
+    '''
+        
+    criterion = torch.nn.CrossEntropyLoss()
 
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    header = 'Test:'
+
+    # switch to evaluation mode
     
+    for images, target in metric_logger.log_every(data_loader_val, 10, header):
+        images = images.to(device, non_blocking=True)
+        target = target.to(device, non_blocking=True)
 
+        next_node = ['nodeA', 'nodeB']
+        next_input = {'nodeA': {'x': images}, 'nodeB': {'x': images}}
+        old_node = []
+        # compute output
+        with torch.cuda.amp.autocast():
+            while len(next_node) > 0: 
+                current_node = None
+                for i in range(len(next_node)): 
+                    dependencies = conformer.conformer_small_patch16_dependencies[next_node[i]]['prev']
+                    if all(item in old_node for item in dependencies):
+                        current_node = next_node.pop(i)
+                        old_node.append(current_node)
+                        break
+                
+                model = models[current_node]
+                input_list = next_input[current_node]
+                del next_input[current_node]
+                out_ = model.forward(input_list)
+
+                for n in conformer.conformer_small_patch16_dependencies[current_node]['next']:
+                    if n not in next_input:
+                        next_node.append(n)
+                        next_input.update({n: out_})
+                    else:
+                        next_input[n].update(out_)
+
+            output = [out_['conv_cls'], out_['tran_cls']]
+            # print(FlopCountAnalysis(model, images).total())
+            # Conformer
+            if isinstance(output, list):
+                loss_list = [criterion(o, target) / len(output)  for o in output]
+                loss = sum(loss_list)
+            # others
+            else:
+                loss = criterion(output, target)
+        if isinstance(output, list):
+            # Conformer
+            acc1_head1 = accuracy(output[0], target, topk=(1,))[0]
+            acc1_head2 = accuracy(output[1], target, topk=(1,))[0]
+            acc1_total = accuracy(output[0] + output[1], target, topk=(1,))[0]
+        else:
+            # others
+            acc1, acc5 = accuracy(output, target, topk=(1, 5))
+
+        batch_size = images.shape[0]
+        if isinstance(output, list):
+            metric_logger.update(loss=loss.item())
+            metric_logger.update(loss_0=loss_list[0].item())
+            metric_logger.update(loss_1=loss_list[1].item())
+            metric_logger.meters['acc1'].update(acc1_total.item(), n=batch_size)
+            metric_logger.meters['acc1_head1'].update(acc1_head1.item(), n=batch_size)
+            metric_logger.meters['acc1_head2'].update(acc1_head2.item(), n=batch_size)
+        else:
+            metric_logger.update(loss=loss.item())
+            metric_logger.meters['acc1'].update(acc1.item(), n=batch_size)
+            metric_logger.meters['acc5'].update(acc5.item(), n=batch_size)
+    if isinstance(output, list):
+        print('* Acc@heads_top1 {heads_top1.global_avg:.3f} Acc@head_1 {head1_top1.global_avg:.3f} Acc@head_2 {head2_top1.global_avg:.3f} '
+              'loss@total {losses.global_avg:.3f} loss@1 {loss_0.global_avg:.3f} loss@2 {loss_1.global_avg:.3f} '
+              .format(heads_top1=metric_logger.acc1, head1_top1=metric_logger.acc1_head1, head2_top1=metric_logger.acc1_head2,
+                      losses=metric_logger.loss, loss_0=metric_logger.loss_0, loss_1=metric_logger.loss_1))
+    else:
+        print('* Acc@1 {top1.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}'
+          .format(top1=metric_logger.acc1, top5=metric_logger.acc5, losses=metric_logger.loss))
+
+    test_stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()} 
+    print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
+    return
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DeiT training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
