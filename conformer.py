@@ -693,7 +693,6 @@ class Conformer(nn.Module):
         for i in range(2, self.fin_stage):
             # x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
             if f'nodeF_step1_{i}' in self.mygraph:
-                print('OKKKKK')
                 x, x2 = eval('self.conv_trans_step1_' + str(i))(input_list['x'])
                 return_list['x'] = x
                 return_list['x2'] = x2

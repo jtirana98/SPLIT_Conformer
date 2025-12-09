@@ -467,7 +467,7 @@ def load_model(args):
                         print(f'before merging, next_input[{n}] has keys {list(next_input[n].keys())}, out_ has keys {list(out_.keys())}')
                         next_input[n].update(out_)
                         print(f'after merging, next_input[{n}] has keys {list(next_input[n].keys())}')
-                if next_node == []:
+                if conformer.conformer_small_patch16_dependencies[current_node]['next'] == []:
                     for k in out_.keys():
                         final_out.update({k: out_[k]})
 
