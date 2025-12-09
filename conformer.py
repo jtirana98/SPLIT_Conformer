@@ -57,19 +57,19 @@ conformer_small_patch16_dependencies = {
     'nodeH_fusion_2': {'prev':['nodeF_step1_2', 'nodeF_trans_steps_2'], 'next': ['nodeF_step1_3']},
     
     'nodeF_step1_3': {'prev':['nodeH_fusion_2'], 'next': ['nodeF_trans_steps_3']},
-    'nodeF_trans_steps_3': {'prev':['nodeF_trans_steps_2', 'nodeF_step1_2'], 'next': ['nodeF_trans_steps_4']},
+    'nodeF_trans_steps_3': {'prev':['nodeF_trans_steps_2', 'nodeF_step1_3'], 'next': ['nodeF_trans_steps_4']},
     'nodeH_fusion_3': {'prev':['nodeF_step1_3', 'nodeF_trans_steps_3'], 'next': ['nodeF_step1_4']},
     
     'nodeF_step1_4': {'prev':['nodeH_fusion_3'], 'next': ['nodeF_trans_steps_4']},
-    'nodeF_trans_steps_4': {'prev':['nodeF_trans_steps_3', 'nodeF_step1_3'], 'next': ['nodeF_trans_steps_5']},
+    'nodeF_trans_steps_4': {'prev':['nodeF_trans_steps_3', 'nodeF_step1_4'], 'next': ['nodeF_trans_steps_5']},
     'nodeH_fusion_4': {'prev':['nodeF_step1_4', 'nodeF_trans_steps_4'], 'next': ['nodeF_step1_5']},
     
     'nodeF_step1_5': {'prev':['nodeH_fusion_4'], 'next': ['nodeF_trans_steps_5']},
-    'nodeF_trans_steps_5': {'prev':['nodeF_trans_steps_4', 'nodeF_step1_4'], 'next': ['nodeF_trans_steps_6']},
+    'nodeF_trans_steps_5': {'prev':['nodeF_trans_steps_4', 'nodeF_step1_5'], 'next': ['nodeF_trans_steps_6']},
     'nodeH_fusion_5': {'prev':['nodeF_step1_5', 'nodeF_trans_steps_5'], 'next': ['nodeF_step1_6']},
     
     'nodeF_step1_6': {'prev':['nodeH_fusion_5'], 'next': ['nodeF_trans_steps_6']},
-    'nodeF_trans_steps_6': {'prev':['nodeF_trans_steps_5', 'nodeF_step1_5'], 'next': ['nodeF_trans_steps_7']},
+    'nodeF_trans_steps_6': {'prev':['nodeF_trans_steps_5', 'nodeF_step1_6'], 'next': ['nodeF_trans_steps_7']},
     'nodeH_fusion_6': {'prev':['nodeF_step1_6', 'nodeF_trans_steps_6'], 'next': ['nodeF_step1_7']},
     
     'nodeF_step1_7': {'prev':['nodeH_fusion_6'], 'next': ['nodeF_trans_steps_7']},
