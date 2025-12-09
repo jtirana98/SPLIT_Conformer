@@ -637,7 +637,7 @@ class Conformer(nn.Module):
                     )
             
         self.fin_stage = fin_stage
-
+        print(self.fin_stage)
         
 
         self.apply(self._init_weights)
