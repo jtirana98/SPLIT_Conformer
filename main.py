@@ -373,7 +373,7 @@ def main(args):
 def load_model(args):
     args = parser.parse_args()
     device = torch.device(args.device)
-    args.nb_classes = 1000
+    dataset_val, args.nb_classes = build_dataset(is_train=False, args=args)
     model = create_model(
         args.model,
         pretrained=False,
@@ -397,19 +397,20 @@ def load_model(args):
     #for k in list(model_state.keys()):
     model.load_state_dict(model_tocopy['model'], strict=False)
 
-    dataset_val, _ = build_dataset(is_train=False, args=args)
+    
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, batch_size=int(3.0 * args.batch_size),
         shuffle=False, num_workers=args.num_workers,
         pin_memory=args.pin_mem, drop_last=False
     )
-
+    
+    model.to(device)
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         return
 
-    model.to(device)
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DeiT training and evaluation script', parents=[get_args_parser()])
