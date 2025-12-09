@@ -50,7 +50,7 @@ conformer_small_patch16_dependencies = {
     'nodeB': {'prev':[], 'next': ['nodeC', 'nodeD']},
     'nodeC': {'prev':['nodeB'], 'next': ['nodeF_step1_2']},
     'nodeD': {'prev':['nodeB'], 'next': ['nodeE']},
-    'nodeE': {'prev':['nodeA, nodeD'], 'next': ['nodeF_trans_steps_2']},
+    'nodeE': {'prev':['nodeA', 'nodeD'], 'next': ['nodeF_trans_steps_2']},
     
     'nodeF_step1_2': {'prev':['nodeC'], 'next': ['nodeF_trans_steps_2']},
     'nodeF_trans_steps_2': {'prev':['nodeE', 'nodeF_step1_2'], 'next': ['nodeF_trans_steps_3']},
