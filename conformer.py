@@ -76,7 +76,7 @@ conformer_small_patch16_dependencies = {
     'nodeF_trans_steps_7': {'prev':['nodeF_trans_steps_6', 'nodeF_step1_7'], 'next': ['nodeF_trans_steps_8', 'nodeH_fusion_7']},
     'nodeH_fusion_7': {'prev':['nodeF_step1_7', 'nodeF_trans_steps_7'], 'next': ['nodeF_step1_8']},
     
-    'nodeF_step1_8': {'prev':['nodeH_fusion_7'], 'next': ['nodeF_trans_steps_8']},
+    'nodeF_step1_8': {'prev':['nodeH_fusion_7'], 'next': ['nodeF_trans_steps_8', 'nodeH_fusion_8']},
     'nodeF_trans_steps_8': {'prev':['nodeF_trans_steps_7', 'nodeF_step1_8'], 'next': ['nodeF_trans_steps_9', 'nodeH_fusion_8']},
     'nodeH_fusion_8': {'prev':['nodeF_step1_8', 'nodeF_trans_steps_8'], 'next': ['nodeF_step1_9', 'nodeH_fusion_8']},
     
