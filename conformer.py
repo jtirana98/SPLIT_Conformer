@@ -665,9 +665,10 @@ class Conformer(nn.Module):
 
 
     def forward(self, input_list):
-        B = input_list['x'].shape[0]
+        
         return_list = {}
         if 'nodeA' in self.mygraph:
+            B = input_list['x'].shape[0]
             cls_tokens = self.cls_token.expand(B, -1, -1) #nodeA
             return_list['cls_token'] = cls_tokens
         # pdb.set_trace()
