@@ -439,6 +439,7 @@ def load_model(args):
         old_node = []
         # compute output
         with torch.cuda.amp.autocast():
+            final_out = []
             while len(next_node) > 0: 
                 current_node = None
                 print(f'Searching among {next_node} with old nodes {old_node}')
@@ -466,6 +467,8 @@ def load_model(args):
                         print(f'before merging, next_input[{n}] has keys {list(next_input[n].keys())}, out_ has keys {list(out_.keys())}')
                         next_input[n].update(out_)
                         print(f'after merging, next_input[{n}] has keys {list(next_input[n].keys())}')
+                if next_node == []:
+                    final_out.append(out_)
 
             output = [out_['conv_cls'], out_['tran_cls']]
             # print(FlopCountAnalysis(model, images).total())
