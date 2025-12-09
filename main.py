@@ -460,7 +460,9 @@ def load_model(args):
                         next_node.append(n)
                         next_input.update({n: out_})
                     else:
+                        print(f'before merging, next_input[{n}] has keys {list(next_input[n].keys())}, out_ has keys {list(out_.keys())}')
                         next_input[n].update(out_)
+                        print(f'after merging, next_input[{n}] has keys {list(next_input[n].keys())}')
 
             output = [out_['conv_cls'], out_['tran_cls']]
             # print(FlopCountAnalysis(model, images).total())
