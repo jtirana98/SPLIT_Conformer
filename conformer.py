@@ -523,8 +523,8 @@ class Conformer(nn.Module):
         # end nodeA --> x_base
 
         # 1 stage
+        stage_1_channel = int(base_channel * channel_ratio)
         if 'nodeC' in self.mygraph:
-            stage_1_channel = int(base_channel * channel_ratio)
             self.conv_1 = ConvBlock(inplanes=64, outplanes=stage_1_channel, res_conv=True, stride=1)
         
         if 'nodeD' in self.mygraph:
