@@ -4,6 +4,9 @@ import torch.nn.functional as F
 from functools import partial
 
 from timm.models.layers import DropPath, trunc_normal_
+from timm.models import create_model
+
+
 
 conformer_small_patch16_modules = [
     'nodeA',
@@ -96,7 +99,14 @@ conformer_small_patch16_dependencies = {
     'nodeI_conv_head': {'prev':['nodeH_fusion_11'], 'next': []},
     }
 
-input_val = {'nodeH_fusion_': ['x', 'x_t_r'],}
+
+dependencies_all = {
+    'Conformer_small_patch16': conformer_small_patch16_dependencies,
+}
+
+nodes_all = {
+    'Conformer_small_patch16': conformer_small_patch16_modules,
+}
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -723,3 +733,23 @@ class Conformer(nn.Module):
         
         # [conv_cls, tran_cls]
         return return_list
+
+
+def get_subgraph(the_graph, args):
+    model = create_model(
+        args.model,
+        pretrained=False,
+        num_classes=args.nb_classes,
+        drop_rate=args.drop,
+        drop_path_rate=args.drop_path,
+        drop_block_rate=args.drop_block,
+        mygraph=the_graph
+    )
+
+    model_tocopy = torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', weights_only=False)
+    model.load_state_dict(model_tocopy['model'], strict=False)
+    device = torch.device(args.device)
+    model.to(device)
+    model.eval()
+
+    return model

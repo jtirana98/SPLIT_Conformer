@@ -514,28 +514,6 @@ def load_model(args):
     print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
     return
 
-def get_subgraph(the_graph):
-    parser = argparse.ArgumentParser('DeiT training and evaluation script', parents=[get_args_parser()])
-    args = parser.parse_args()
-
-    model = create_model(
-        args.model,
-        pretrained=False,
-        num_classes=args.nb_classes,
-        drop_rate=args.drop,
-        drop_path_rate=args.drop_path,
-        drop_block_rate=args.drop_block,
-        mygraph=the_graph
-    )
-
-    model_tocopy = torch.load('/home/people/21211297/scratch/Hybrid-ViT-with-split-computing/models/conformer/output/Conformer_small_patch16_batch_1024_lr1e-3_300epochs/checkpoint.pth', weights_only=False)
-    model.load_state_dict(model_tocopy['model'], strict=False)
-    device = torch.device(args.device)
-    model.to(device)
-    model.eval()
-
-    return model
-
 
 
 if __name__ == '__main__':
