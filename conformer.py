@@ -683,22 +683,27 @@ class Conformer(nn.Module):
             B = input_list['x'].shape[0]
             cls_tokens = self.cls_token.expand(B, -1, -1) #nodeA
             return_list['cls_tokens'] = cls_tokens
+            input_list['cls_tokens'] = cls_tokens
         # pdb.set_trace()
         # stem stage [N, 3, 224, 224] -> [N, 64, 56, 56]
         if 'nodeB' in self.mygraph:
             x_base = self.maxpool(self.act1(self.bn1(self.conv1(input_list['x'])))) #nodeB
             return_list['x_base'] = x_base
+            input_list['x_base'] = x_base
         # 1 stage
         if 'nodeC' in self.mygraph:
             x = self.conv_1(input_list['x_base'], return_x_2=False) #nodeC
             return_list['x'] = x
+            input_list['x'] = x
         if 'nodeD' in self.mygraph:
             x_t = self.trans_patch_conv(input_list['x_base']).flatten(2).transpose(1, 2) #nodeD
             return_list['x_t'] = x_t
+            input_list['x_t'] = x_t
         if 'nodeE' in self.mygraph:
             x_t = torch.cat([input_list['cls_tokens'], input_list['x_t']], dim=1)
             x_t = self.trans_1(x_t) 
             return_list['x_t'] = x_t
+            input_list['x_t'] = x_t
         # 2 ~ final 
         for i in range(2, self.fin_stage):
             # x, x_t = eval('self.conv_trans_' + str(i))(x, x_t)
@@ -706,30 +711,40 @@ class Conformer(nn.Module):
                 x, x2 = eval('self.conv_trans_step1_' + str(i))(input_list['x'])
                 return_list['x'] = x
                 return_list['x2'] = x2
+
+                input_list['x'] = x
+                input_list['x2'] = x2
             if f'nodeF_trans_steps_{i}' in self.mygraph:
                 x_t, x_t_r = eval('self.conv_trans_steps_' + str(i))(input_list['x2'], input_list['x_t'])
                 return_list['x_t'] = x_t
                 return_list['x_t_r'] = x_t_r
+
+                input_list['x_t'] = x_t
+                input_list['x_t_r'] = x_t_r
             if self.num_med_block  > 0:
                 for j in range(self.num_med_block):
                     if f'nodeG_medblock_{j}_{i}' in self.mygraph:
                         x = eval('self.conv_trans_medblock_' + str(j) + '_' + str(i))(input_list['x'])
                         return_list['x'] = x  
+                        input_list['x'] = x 
             if f'nodeH_fusion_{i}' in self.mygraph:
                 x = eval('self.conv_trans_fusion_' + str(i))(input_list['x'], input_list['x_t_r'], return_x_2=False)
                 return_list['x'] = x
+                input_list['x'] = x
 
         # conv classification
         if 'nodeI_conv_head' in self.mygraph:
             x_p = self.pooling(input_list['x']).flatten(1)
             conv_cls = self.conv_cls_head(x_p)
             return_list['conv_cls'] = conv_cls
+            input_list['conv_cls'] = conv_cls
 
         # trans classification
         if 'nodeI_trans_head' in self.mygraph:
             x_t = self.trans_norm(input_list['x_t'])
             tran_cls = self.trans_cls_head(x_t[:, 0])
             return_list['tran_cls'] = tran_cls
+            input_list['tran_cls'] = tran_cls
         
         # [conv_cls, tran_cls]
         return return_list
