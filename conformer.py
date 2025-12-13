@@ -737,14 +737,12 @@ class Conformer(nn.Module):
             x_p = self.pooling(input_list['x']).flatten(1)
             conv_cls = self.conv_cls_head(x_p)
             return_list['conv_cls'] = conv_cls
-            input_list['conv_cls'] = conv_cls
 
         # trans classification
         if 'nodeI_trans_head' in self.mygraph:
             x_t = self.trans_norm(input_list['x_t'])
             tran_cls = self.trans_cls_head(x_t[:, 0])
             return_list['tran_cls'] = tran_cls
-            input_list['tran_cls'] = tran_cls
         
         # [conv_cls, tran_cls]
         return return_list
